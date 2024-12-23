@@ -4,11 +4,21 @@ using UnityEngine;
 
 public class MoveGimmick: MonoBehaviour
 {
+    enum MoveType
+    {
+        èÌéû,
+        ãNìÆ
+    }
+
+    [SerializeField] MoveType type;
+
     [SerializeField] float moveTime;
 
     [SerializeField] float interval;
 
     [SerializeField] GameObject[] routePoint;
+
+    [SerializeField] GameObject trigger;
 
     Rigidbody rig;
 
@@ -20,10 +30,11 @@ public class MoveGimmick: MonoBehaviour
 
     Vector3 nextPos;
 
-
     float timer;
 
     Vector3 vel;
+
+
 
     void Start()
     {
@@ -34,7 +45,21 @@ public class MoveGimmick: MonoBehaviour
 
     void FixedUpdate()
     {
-        if(timer <= moveTime)
+        switch (type)
+        {
+            case MoveType.èÌéû:
+                AlwaysMove();
+                break;
+
+            case MoveType.ãNìÆ:
+                StartMove();
+                break;
+        }
+    }
+
+    void AlwaysMove()
+    {
+        if (timer <= moveTime)
         {
             timer += Time.fixedDeltaTime;
 
@@ -52,6 +77,28 @@ public class MoveGimmick: MonoBehaviour
         vel = rig.GetPointVelocity(Vector3.zero);
     }
 
+    void StartMove()
+    {
+        if (trigger == null)
+        {
+            if (timer <= moveTime)
+            {
+                timer += Time.fixedDeltaTime;
+
+                currentPos = routePoint[current].transform.position;
+
+                nextPos = routePoint[next].transform.position;
+
+                rig.MovePosition(Vector3.Lerp(currentPos, nextPos, timer / moveTime));
+            }
+            else
+            {
+                Pause();
+            }
+        }
+
+        vel = rig.GetPointVelocity(Vector3.zero);
+    }
 
     void Pause()
     {

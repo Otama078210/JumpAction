@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PlayerHitCheck : MonoBehaviour
+public class PlayerHitCheck : Singleton<PlayerHitCheck>
 {
     public int gameLevel;
 
@@ -30,6 +30,8 @@ public class PlayerHitCheck : MonoBehaviour
 
     bool fade;
     bool respawn;
+    bool stageOut;
+    [HideInInspector] public bool gimmickOn;
 
     private void Start()
     {
@@ -49,7 +51,9 @@ public class PlayerHitCheck : MonoBehaviour
         if (other.gameObject.tag == "Respawn")
         {
             respawn = true;
-            fade = true;           
+            fade = true;
+
+            SoundManager.Instance.PlaySE_Game(5);
 
             switch (gameLevel)
             {
@@ -57,18 +61,41 @@ public class PlayerHitCheck : MonoBehaviour
                     break;
 
                 case 1:
-                    GameManager.Instance.StageOut(damageSO);
+                    if (!stageOut)
+                    {
+                        GameManager.Instance.StageOut(damageSO / 2);
+                        stageOut = true;
+                    }
                     break;
 
                 case 2:
-                    GameManager.Instance.StageOut(damageSO * 2);
+                    if(!stageOut)
+                    {
+                        GameManager.Instance.StageOut(damageSO);
+                        stageOut = true;
+                    }
+                    break;
+
+                case 3:
+                    if (!stageOut)
+                    {
+                        GameManager.Instance.StageOut(damageSO * 2);
+                        stageOut = true;
+                    }
                     break;
             }
+        }
+
+        if (other.transform.tag == "Trigger")
+        { 
+            Destroy(other.gameObject);
         }
 
         if (other.transform.tag == "HalfWay")
         {
             Vector3 changeRes = other.transform.position;
+
+            SoundManager.Instance.PlaySE_Game(7);
 
             respawnX = changeRes.x;
             respawnY = changeRes.y;
@@ -90,7 +117,7 @@ public class PlayerHitCheck : MonoBehaviour
 
         if(other.transform.tag == "Finish" && GameManager.Instance.clearble == true)
         {
-            GameManager.Instance.GameClear();
+            TimelineManager.Instance.PlayTimeline(3);
         }
 
         if (other.transform.tag == "Enemy" && GameManager.Instance.gameOver == false && !GameManager.Instance.state_damage)
@@ -117,7 +144,7 @@ public class PlayerHitCheck : MonoBehaviour
 
     void StageOutFade()
     {
-        if (fade)
+        if (fade && GameManager.Instance.mainGame)
         {
             timer += Time.deltaTime;
 
@@ -151,6 +178,7 @@ public class PlayerHitCheck : MonoBehaviour
                 player.transform.position = new Vector3(respawnX, respawnY, respawnZ);
                 player.transform.rotation = Quaternion.Euler(0, 0, 0);
                 respawn = false;
+                stageOut = false;
             }
         }        
     }

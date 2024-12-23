@@ -13,7 +13,7 @@ public class PlayerController : Singleton<PlayerController>
     public float riseTime = 1.0f;
     public float knockBack = 10.0f;
 
-    float rayLength = 0.1f;
+    public float rayLength = 0.4f;
     float riseTimeTemp = 0.0f;
     
     Animator anime;
@@ -24,13 +24,13 @@ public class PlayerController : Singleton<PlayerController>
 
     [HideInInspector] public bool stageOut;
     bool playPossible;
+    public bool jump;
     bool unrivaled;
-    bool jump;
+    bool jumpPossible;
     bool isGrounded;
+    bool stepSE;
 
     bool clear, death;
-
-    public GameObject hitPos;
 
     void Start()
     {
@@ -84,22 +84,59 @@ public class PlayerController : Singleton<PlayerController>
     {
         var distance = rayLength;
 
-        var groundRay = new Ray(transform.position + Vector3.up * distance, Vector3.down);
-        RaycastHit objectStatus;
+        var groundRay_Center = new Ray(transform.position + Vector3.up * distance, Vector3.down);
+        var groundRay_Front = new Ray(transform.position + Vector3.left / 2 + Vector3.up * distance, Vector3.down);
+        var groundRay_Rear = new Ray(transform.position + Vector3.right / 2 + Vector3.up * distance, Vector3.down);
+        RaycastHit objectStatus_C;
+        RaycastHit objectStatus_F;
+        RaycastHit objectStatus_R;
 
-        Debug.DrawRay(groundRay.origin, groundRay.direction * distance, Color.red, 100.0f, false);
+        Debug.DrawRay(groundRay_Center.origin, groundRay_Center.direction * distance, Color.red, 100.0f, false);
+        Debug.DrawRay(groundRay_Front.origin, groundRay_Center.direction * distance, Color.red, 100.0f, false);
+        Debug.DrawRay(groundRay_Rear.origin, groundRay_Center.direction * distance, Color.red, 100.0f, false);
 
-        if (Physics.Raycast(groundRay, out objectStatus, distance))
+        if (Physics.Raycast(groundRay_Center, out objectStatus_C, distance))
         {
-            if (objectStatus.collider.tag == "Ground")
+            if (objectStatus_C.collider.tag == "Ground" && !jump)
             {
                 isGrounded = true;
-                jump = true;
+                jumpPossible = true;
+            }
+        }
+        else if(Physics.Raycast(groundRay_Front, out objectStatus_F, distance))
+        {
+            if (objectStatus_F.collider.tag == "Ground" && !jump)
+            {
+                isGrounded = true;
+                jumpPossible = true;
+            }
+        }
+        else if(Physics.Raycast(groundRay_Rear, out objectStatus_R, distance))
+        {
+            if (objectStatus_R.collider.tag == "Ground" && !jump)
+            {
+                isGrounded = true;
+                jumpPossible = true;
             }
         }
         else
         {
             isGrounded = false;
+            stepSE = true;
+        }
+
+        if (!jump && !isGrounded)
+        {
+            jumpPossible = false;
+        }
+
+        if(stepSE)
+        {
+            if (isGrounded)
+            {
+                SoundManager.Instance.PlaySE_Game(8);
+                stepSE = false;
+            }
         }
     }
 
@@ -115,7 +152,6 @@ public class PlayerController : Singleton<PlayerController>
         }
         else
         {
-
         }
     }
 
@@ -126,17 +162,23 @@ public class PlayerController : Singleton<PlayerController>
             if (Input.GetButtonDown("Jump"))
             {
                 gravityDirection.y = jumpPower;
+
+                SoundManager.Instance.PlaySE_Game(3);
+                Instantiate(EffectManager.Instance.playerFX[2], transform.position, Quaternion.identity);
+
+                jump = true;
             }
             //Debug.Log("isGrounded");
         }
         else
         {
-            if (jump && Input.GetButtonUp("Jump") || riseTimeTemp > riseTime)
+            if (jumpPossible && Input.GetButtonUp("Jump") || riseTimeTemp > riseTime)
             {
+                jumpPossible = false;
                 jump = false;
             }
 
-            if (jump && Input.GetButton("Jump") && riseTimeTemp <= riseTime)
+            if (jumpPossible && Input.GetButton("Jump") && riseTimeTemp <= riseTime)
             {
                 riseTimeTemp += Time.deltaTime;
                 gravityDirection.y = jumpPower;
@@ -168,7 +210,6 @@ public class PlayerController : Singleton<PlayerController>
         }
         else
         {
-
         }
     }
 
@@ -176,11 +217,12 @@ public class PlayerController : Singleton<PlayerController>
     {
         if (anime.GetCurrentAnimatorStateInfo(0).IsName("Damage"))
         {
-            //アニメーションの再生時間が0.8秒になるまで
             if (anime.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.8)
             {
                 moveDirection = -transform.right * knockBack;
                 character.Move(moveDirection * Time.deltaTime);
+
+                jump = false;
             }
             else
             {
@@ -192,6 +234,12 @@ public class PlayerController : Singleton<PlayerController>
 
     void Animation()
     {
+        if (GameManager.Instance.gameClear && !clear)
+        {
+            anime.SetTrigger("Clear");
+            clear = true;
+        }
+
         if (GameManager.Instance.gameOver && !death)
         {
             anime.SetTrigger("Death");
@@ -204,14 +252,14 @@ public class PlayerController : Singleton<PlayerController>
             anime.SetTrigger("Damage");
         }
 
-        if (!isGrounded)
+        if (!isGrounded || jump)
         {
             anime.SetBool("Jump", true);
             return;
         }
          anime.SetBool("Jump", false);
 
-        if (hor != 0 && !stageOut)
+        if (hor != 0 && !stageOut && GameManager.Instance.mainGame)
         {
             anime.SetBool("Run", true);
             return;

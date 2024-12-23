@@ -29,7 +29,7 @@ public class DebugManager : MonoBehaviour
         //Instance  Singleton内にInstance関数が作られているため使用できる
 
         //FadeManagerからシーンのロードを行う
-        FadeManager.Instance.LoadScene(SceneManager.GetActiveScene().name, 1);
+        FadeManager.Instance.LoadSceneIndex(1, 1);
 
         //SoundManagerからSEを呼び出し
         SoundManager.Instance.PlaySE_Sys(0);
