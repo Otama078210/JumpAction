@@ -5,8 +5,7 @@ using UnityEngine;
 
 public class EnemyNavMesh : MonoBehaviour
 {
-    //移動の方法指定
-    enum MoveType　　　//enum　変化しない定数を複数個格納できる変数
+    enum MoveType
     {
         なし,
         追跡,
@@ -81,7 +80,7 @@ public class EnemyNavMesh : MonoBehaviour
                     break;
 
                 case MoveType.巡回から逃走:
-                    RunEnemy();
+                    PatRun();
                     break;
             }
         }
@@ -142,13 +141,14 @@ public class EnemyNavMesh : MonoBehaviour
         if (search.playerIN)
         {
             ChasePlayer();
-            nav.speed = speedCs;
-            nav.acceleration = accelerationCs;
-            nav.angularSpeed = angularCs;
         }
         else
         {
             RoutePat();
+
+            animator.SetBool("Run", false);
+            animator.SetBool("Attack", false);
+
             nav.speed = speedPt;
             nav.acceleration = accelerationPt;
             nav.angularSpeed = angularPt;
@@ -174,6 +174,18 @@ public class EnemyNavMesh : MonoBehaviour
 
     void PatRun()
     {
+        if (search.playerIN)
+        {
+            RunEnemy();
+        }
+        else
+        {
+            RoutePat();
+        }
+    }
 
+    public void WalkAnimation()
+    {
+        SoundManager.Instance.PlaySE_Game(2);
     }
 }

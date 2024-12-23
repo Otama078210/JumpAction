@@ -4,13 +4,15 @@ using UnityEngine;
 
 public class EnemySearch : MonoBehaviour
 {
-    /*[HideInInspector]*/ public bool playerIN , attackFLG;
+    [HideInInspector] public bool playerIN , attackFLG;
 
     [SerializeField] GameObject attackSearch;
+
     EnemyAttack enemyAttack;
 
     private void Start()
     {
+
         enemyAttack = attackSearch.GetComponent<EnemyAttack>();
     }
 

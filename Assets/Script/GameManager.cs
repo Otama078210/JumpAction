@@ -4,10 +4,10 @@ using TMPro;
 using UnityEngine.UI;
 using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.EventSystems;
 
 public class GameManager : Singleton<GameManager>
 {
-    public bool gameStart = false;  
     public bool mainGame = false;   
     public bool clearble = false;   
     public bool gameClear = false;  
@@ -30,27 +30,21 @@ public class GameManager : Singleton<GameManager>
     public Image hpGauge;
     float hpValue;
 
-    [Header("Demo")]
-    [SerializeField] PlayableDirector pd_gameStart;
-    //[SerializeField] PlayableDirector pd_gameClear; ゲームをクリアしたときに演出を再生する（仮）
-
     [Header("DemoSkip")]
     [SerializeField] GameObject canvasMainGame;
     [SerializeField] GameObject canvasStartDemo;
     [SerializeField] GameObject pd_parent;
     [SerializeField] GameObject mainCamera;
 
-    public GameObject canvasGameClear;
-    public GameObject canvasGameOver;
+    public GameObject clearFocus;
+    public GameObject falseFocus;
 
     public float timeCount = 60;
     public TextMeshProUGUI timeCountText;
 
     void Start()
     {
-        mainGame = true;
-
-        pd_gameStart.Play();
+        TimelineManager.Instance.PlayTimeline(0);
 
         hpCurrent = hpMax;
 
@@ -62,21 +56,18 @@ public class GameManager : Singleton<GameManager>
 
         maxText.text = itemCountMax.ToString("000");
         currentText.text = itemCountCurrent.ToString("000");
-
-        canvasGameClear.SetActive(false);
-        canvasGameOver.SetActive(false);
     }
 
     void FixedUpdate()
     {
         hpCurrent = Mathf.Clamp(hpCurrent, 0, hpMax);
 
-        if(timeCount <= 0 || hpCurrent <= 0 && !gameOver)
+        if((timeCount <= 0 || hpCurrent <= 0) && !gameOver)
         {
             GameOver();
         }      
 
-        if(pd_gameStart.state == PlayState.Playing && Input.GetButtonDown("Skip"))
+        if(TimelineManager.Instance.director[0].state == PlayState.Playing && Input.GetButtonDown("Skip"))
         {
             DemoSkip();
         }
@@ -125,26 +116,36 @@ public class GameManager : Singleton<GameManager>
         hpGauge.fillAmount = hpValue;
     }
 
-    void GameOver()
+    public void GameClear()
+    {
+        SoundManager.Instance.PlaySE_Sys(1);
+        SoundManager.Instance.StopBGM();
+        TimelineManager.Instance.PlayTimeline(1);
+        mainGame = false;
+        gameClear = true;
+        Debug.Log("ゲームクリア");
+    }
+
+    public void ClearFocus()
+    {
+        EventSystem.current.SetSelectedGameObject(clearFocus);
+    }
+
+    public void GameOver()
     {
         SoundManager.Instance.PlaySE_Sys(2);
         SoundManager.Instance.StopBGM();
-        canvasGameOver.SetActive(true);
+        TimelineManager.Instance.PlayTimeline(2);
         mainGame = false;
         gameOver = true;
         Debug.Log("ゲームオーバー");
     }
 
-    public void GameClear()
+    public void FalseFocus()
     {
-        SoundManager.Instance.PlaySE_Sys(1);
-        SoundManager.Instance.StopBGM();
-        canvasGameClear.SetActive(true);
-        mainGame = false;
-        gameClear = true;
-        Debug.Log("ゲームクリア");
+        EventSystem.current.SetSelectedGameObject(falseFocus);
     }
-    
+
     public void MainGameFLG(bool flg)
     {
         mainGame = flg;
@@ -152,7 +153,7 @@ public class GameManager : Singleton<GameManager>
 
     public void DemoSkip()
     {
-        pd_gameStart.Stop();
+        TimelineManager.Instance.StopTimeline(0);
 
         canvasMainGame.SetActive(true);   
         canvasStartDemo.SetActive(false); 

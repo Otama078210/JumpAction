@@ -9,6 +9,7 @@ TagManager:
   - HalfWay
   - Particle
   - Ground
+  - Trigger
   layers:
   - Default
   - TransparentFX
